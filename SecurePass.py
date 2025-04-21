@@ -97,7 +97,10 @@ class PasswordManager:
         decrypted_urls = [self.decrypt(row['Url/App name'], master_pass) for index, row in df.iterrows()]
         return decrypted_urls
 
-    def search(self, master_pass, url=''):
+    def search(self, master_pass, url=None):
+        if url is None or len(url.strip()) < 2:  # Check if less than 2 characters and not empty
+            return ["Please enter at least 2 characters to search."]
+        
         df = pd.read_csv('data.csv')
 
         decrypted_urls = [self.decrypt(row['Url/App name'], master_pass) for index, row in df.iterrows()]
@@ -155,7 +158,7 @@ class ModernApp(tk.Tk):
         self.last_password = ""
 
         self.title("SecurePass Manager")
-        self.geometry("600x600")
+        self.geometry("420x500")
         self.configure(bg=BG_COLOR)
         
         # Set application icon (replace with your own icon path if available)
@@ -259,7 +262,7 @@ class ModernApp(tk.Tk):
         self.show_input_dialog("Add Credentials", ["URL/App Name", "Username", "Password"], self.add_callback)
     
     def search_credentials(self):
-        self.show_input_dialog("Search Credentials", ["URL/App Name (leave blank for all)"], self.search_callback)
+        self.show_input_dialog("Search Credentials", ["URL/App Name"], self.search_callback)
     
     def edit_credential(self):
         self.show_input_dialog("Edit Credentials", 
@@ -284,7 +287,7 @@ class ModernApp(tk.Tk):
         dialog = tk.Toplevel(self)
         dialog.title(title)
         dialog.configure(bg=BG_COLOR)
-        dialog.geometry("400x{}".format(100 + len(fields)*75))
+        dialog.geometry("250x{}".format(100 + len(fields)*75))
         
         frame = ttk.Frame(dialog)
         frame.pack(pady=20, padx=20, fill='both', expand=True)
