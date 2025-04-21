@@ -284,7 +284,7 @@ class ModernApp(tk.Tk):
         dialog = tk.Toplevel(self)
         dialog.title(title)
         dialog.configure(bg=BG_COLOR)
-        dialog.geometry("400x{}".format(100 + len(fields)*50))
+        dialog.geometry("400x{}".format(100 + len(fields)*75))
         
         frame = ttk.Frame(dialog)
         frame.pack(pady=20, padx=20, fill='both', expand=True)
