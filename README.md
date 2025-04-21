@@ -18,25 +18,24 @@ Modern password manager with encryption, saving data locally in encrypted form.
 
 ## Installation
 
-1. clone the repository or download the files:
-
-Translated with DeepL.com (free version)
+- clone the repository or download the files:
    ```bash
    git clone https://github.com/pleomati/SecurePass.git
    cd SecurePass
 
-2.Install required dependencies:
+- Install required dependencies:
 
    ```bash
    pip install -r requirements.txt
 
-3.Run program:
+- Run program:
 
    ```bash
    python securepass.py
 
 Compiling to an executable file
 To compile the program into a stand-alone .exe file (Windows):
+
 Requirements for compilation:
     ```bash
     pip install nuitka
