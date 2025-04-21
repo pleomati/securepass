@@ -1,6 +1,6 @@
 # SecurePass Manager
 
-![Application Screenshot](spass.png) <!-- Add a screenshot if available -->
+![Application Screenshot](spass1.png) <!-- Add a screenshot if available -->
 
 Modern password manager with encryption, saving data locally in encrypted form.
 
@@ -14,7 +14,7 @@ Modern password manager with encryption, saving data locally in encrypted form.
 
 ## System requirements
 - Python 3.8+
-- Windows/Linux/macOS
+- Windows 7/8/10/11, Linux
 
 ## Installation
 
