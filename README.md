@@ -41,9 +41,10 @@ Requirements for compilation:
     ```bash
     pip install nuitka
 
+Run command:
+
     ```bash
-    nuitka --onefile --standalone --follow-imports --windows-console-mode=disable --windows-icon-from-ico=icon.ico --include-data
--files=C:\Path\to\Icon\icon.ico=icon.ico --enable-plugin=tk-inter --include-package=pandas --enable-plugin=pylint-warnings SecurePass.py
+    nuitka --onefile --standalone --follow-imports --windows-console-mode=disable --windows-icon-from-ico=icon.ico --include-data-files=C:\Path\to\Icon\icon.ico=icon.ico --enable-plugin=tk-inter --include-package=pandas --enable-plugin=pylint-warnings SecurePass.py
 
 The programme uses an encryption algorithm dependent on the master password
 
