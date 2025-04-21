@@ -36,12 +36,12 @@ Modern password manager with encryption, saving data locally in encrypted form.
 Compiling to an executable file
 To compile the program into a stand-alone .exe file (Windows):
 
-Requirements for compilation:
+- Requirements for compilation:
     
     ```bash
     pip install nuitka
 
-Run command:
+- Run command:
 
     ```bash
     nuitka --onefile --standalone --follow-imports --windows-console-mode=disable --windows-icon-from-ico=icon.ico --include-data-files=C:\Path\to\Icon\icon.ico=icon.ico --enable-plugin=tk-inter --include-package=pandas --enable-plugin=pylint-warnings SecurePass.py
