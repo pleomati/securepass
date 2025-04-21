@@ -6,6 +6,9 @@ import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox
 import zipfile
 from datetime import datetime
+import hashlib
+import binascii
+import secrets
 
 # Modern color scheme
 BG_COLOR = "#f0f0f0"
@@ -46,38 +49,28 @@ class PasswordManager:
 
         return f"Backup created: {zip_filename}"
 
-    def generate_key(self, master_pass):
-        return ''.join(random.choice(ALPHABET) for _ in range(len(master_pass)))
+    def _derive_key(self, password, salt):
+        iterations = 100000
+        dk = hashlib.pbkdf2_hmac('sha512', 
+                                password.encode('utf-8'), 
+                                salt, 
+                                iterations)
+        return binascii.hexlify(dk).decode('utf-8')
 
-    def encrypt(self, password, master_pass):
-        encrypted_password = ""
-        key = self.generate_key(master_pass)
+    def encrypt(self, plaintext, master_pass):
+        salt = secrets.token_bytes(16)
+        key = self._derive_key(master_pass, salt)
+        encrypted = ''.join(chr(ord(c) ^ ord(key[i % len(key)])) for i, c in enumerate(plaintext))
+        return binascii.hexlify(salt).decode('utf-8') + ':' + encrypted
 
-        for i in range(len(password)):
-            shift = (ord(master_pass[i % len(master_pass)]) + ord(key[i % len(key)]) + i) % len(ALPHABET)
-            if password[i] in ALPHABET:
-                new_pos = (ALPHABET.find(password[i]) + shift) % len(ALPHABET)
-                encrypted_password += ALPHABET[new_pos]
-            else:
-                encrypted_password += password[i]
-
-        return key + encrypted_password
-
-    def decrypt(self, encrypted_password, master_pass):
-        key = encrypted_password[:len(master_pass)]
-        encrypted_password = encrypted_password[len(key):]
-
-        decrypted_password = ""
-
-        for i in range(len(encrypted_password)):
-            shift = (ord(master_pass[i % len(master_pass)]) + ord(key[i % len(key)]) + i) % len(ALPHABET)
-            if encrypted_password[i] in ALPHABET:
-                new_pos = (ALPHABET.find(encrypted_password[i]) - shift) % len(ALPHABET)
-                decrypted_password += ALPHABET[new_pos]
-            else:
-                decrypted_password += encrypted_password[i]
-
-        return decrypted_password
+    def decrypt(self, ciphertext, master_pass):
+        if ':' not in ciphertext:
+            return ciphertext  
+            
+        salt_hex, encrypted = ciphertext.split(':', 1)
+        salt = binascii.unhexlify(salt_hex)
+        key = self._derive_key(master_pass, salt)
+        return ''.join(chr(ord(c) ^ ord(key[i % len(key)])) for i, c in enumerate(encrypted))
 
     def add(self, url, username, password, master_pass):
         if url == '':
