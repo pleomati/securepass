@@ -20,7 +20,7 @@ Modern password manager with encryption, saving data locally in encrypted form.
 
 - clone the repository or download the files:
    ```bash
-   git clone https://github.com/pleomati/SecurePass.git
+   git clone https://github.com/pleomati/securepass.git
    cd SecurePass
 
 - Install required dependencies:
@@ -37,13 +37,14 @@ Compiling to an executable file
 To compile the program into a stand-alone .exe file (Windows):
 
 Requirements for compilation:
+    
     ```bash
     pip install nuitka
 
     ```bash
-    python -m nuitka --standalone --onefile --windows-disable-console --windows-icon-from-ico=icon.ico --enable-plugin=tk-inter -- include-package=pandas --output-dir=build securepass.py
+    nuitka --onefile --standalone --follow-imports --windows-console-mode=disable --windows-icon-from-ico=icon.ico --include-data
+-files=C:\Path\to\Icon\icon.ico=icon.ico --enable-plugin=tk-inter --include-package=pandas --enable-plugin=pylint-warnings SecurePass.py
 
-Install required dependencies:Security
 The programme uses an encryption algorithm dependent on the master password
 
 Data is stored locally in the file data.csv
