@@ -38,73 +38,67 @@ class PasswordManager:
         self.config = self.load_config(master_pass) if master_pass else {'iterations': 100000}
         self.iterations = self.config.get('iterations', 100000)
         
-        if not os.path.isfile('data\data.csv'):
+        if not os.path.isfile('data.csv'):
             self.create_csv()
-
-    def save_config(self, config, master_pass):
-        try:
-            # Konwertuj config na string JSON
-            config_str = json.dumps(config)
+    @staticmethod
+    def load_config():
+        if os.path.isfile('config.json'):
+            try:
+                with open('config.json', 'r') as f:
+                    config = json.load(f)
+                    if 'iterations' in config:
+                        config['iterations'] = transform_iterations(config['iterations'], reverse=True)
+                    return config
+            except:
+                return {'iterations': 100000}
+        return {'iterations': 100000}
+    @staticmethod
+    def save_config(config):
+        config_copy = config.copy()
+        if 'iterations' in config_copy:
+            config_copy['iterations'] = PasswordManager.transform_iterations(config_copy['iterations'])
+        with open('config.json', 'w') as f:
+            json.dump(config_copy, f, indent=2)
             
-            # Zaszyfruj całą konfigurację
-            salt = secrets.token_bytes(32)
-            key = self._derive_key(master_pass, salt)
-            
-            # Wykorzystaj istniejący mechanizm szyfrowania
-            encrypted = self._multi_layer_encrypt(config_str, key)
-            hmac_value = hmac.new(key.encode('utf-8'), encrypted.encode('utf-8'), 'sha3_256').hexdigest()
-            
-            # Przygotuj dane do zapisu
-            data_to_save = {
-                'salt': binascii.hexlify(salt).decode('utf-8'),
-                'data': encrypted,
-                'hmac': hmac_value
+    @staticmethod
+    def transform_iterations(value, reverse=False):
+        if not reverse:
+            salt = random.randint(1000, 9999)
+            combined = (value * 3 + salt) * 7 + 13579
+            hash_obj = hashlib.sha256(str(combined).encode())
+            hash_digest = hash_obj.hexdigest()
+            hash_int = int(hash_digest[:8], 16) 
+            offset = random.randint(50000, 100000)
+            result = {
+                'hash': hash_digest,
+                'offset': offset,
+                'salt': salt,
+                'masked_value': hash_int ^ offset
             }
-            
-            # Zapisz do pliku
-            with open('data\config.json', 'w') as f:
-                json.dump(data_to_save, f)
-                
-            return "Configuration saved and encrypted successfully"
-        except Exception as e:
-            return f"Error saving config: {str(e)}"
-
-    def load_config(self, master_pass):
-        if not os.path.isfile('data\config.json'):
-            return {'iterations': 100000}  # Domyślna wartość
-            
-        try:
-            with open('data\config.json', 'r') as f:
-                encrypted_data = json.load(f)
-                
-            # Weryfikacja struktury pliku
-            if not all(key in encrypted_data for key in ['salt', 'data', 'hmac']):
-                return {'iterations': 100000}
-                
-            # Odszyfrowanie
-            salt = binascii.unhexlify(encrypted_data['salt'])
-            key = self._derive_key(master_pass, salt)
-            
-            # Weryfikacja HMAC
-            expected_hmac = hmac.new(key.encode('utf-8'), 
-                                    encrypted_data['data'].encode('utf-8'), 
-                                    'sha3_256').hexdigest()
-            if not hmac.compare_digest(encrypted_data['hmac'], expected_hmac):
-                return {'iterations': 100000}
-                
-            # Odszyfrowanie danych
-            decrypted = self._multi_layer_decrypt(encrypted_data['data'], key)
-            return json.loads(decrypted)
-            
-        except Exception as e:
-            print(f"Config loading error: {str(e)}")
-            return {'iterations': 100000}
+            return json.dumps(result)
+        else:
+            try:
+                data = json.loads(value)
+                hash_digest = data['hash']
+                offset = data['offset']
+                salt = data['salt']
+                masked_value = data['masked_value']
+                hash_int = masked_value ^ offset
+                for possible_value in range(0, 2000000):
+                    combined = (possible_value * 3 + salt) * 7 + 13579
+                    hash_check = hashlib.sha256(str(combined).encode()).hexdigest()
+                    hash_int_check = int(hash_check[:8], 16)
+                    if hash_int_check == hash_int:
+                        return possible_value
+                return 100000
+            except:
+                return 100000
 
 
-    def update_iterations(self, new_iterations, master_pass):
+    def update_iterations(self, new_iterations):
         self.iterations = new_iterations
         self.config['iterations'] = new_iterations
-        return self.save_config(self.config, master_pass)  # Przekazanie obu wymaganych argumentów
+        PasswordManager.save_config(self.config)
             
     def generate_password(self, length=16):
         """Generate a random password of specified length."""
@@ -115,7 +109,7 @@ class PasswordManager:
     def create_csv(self):
         data = {'Url/App name': [], 'Username': [], 'Password': []}
         df = pd.DataFrame(data)
-        df.to_csv('data\data.csv', index=False)
+        df.to_csv('data.csv', index=False)
 
     def backup(self):
         """Create a backup of data.csv and config.json in ZIP format in backups directory."""
@@ -256,7 +250,7 @@ class PasswordManager:
 
     def add(self, url, username, password, master_pass):
         # Najpierw sprawdź czy istnieje plik konfiguracyjny
-        if not os.path.isfile('data\config.json'):
+        if not os.path.isfile('config.json'):
             return ("SECURITY CONFIGURATION NEEDED\n\n"
                     "Before adding credentials:\n"
                     "1. Set PBKDF2 iterations (10,000-200,000 default 100000)\n"
@@ -275,8 +269,8 @@ class PasswordManager:
                 return "WARNING: Invalid characters in input fields"
 
             # Sprawdź czy URL już istnieje
-            if os.path.isfile('data\data.csv'):
-                df = pd.read_csv('data\data.csv')
+            if os.path.isfile('data.csv'):
+                df = pd.read_csv('data.csv')
                 for _, row in df.iterrows():
                     decrypted_url = self.decrypt(row['Url/App name'], master_pass)
                     if not decrypted_url.startswith('[DECRYPTION ERROR') and decrypted_url == url:
@@ -295,10 +289,10 @@ class PasswordManager:
             }
             new_df = pd.DataFrame(new_data)
             
-            if not os.path.isfile('data\data.csv'):
-                new_df.to_csv('data\data.csv', index=False)
+            if not os.path.isfile('data.csv'):
+                new_df.to_csv('data.csv', index=False)
             else:
-                new_df.to_csv('data\data.csv', mode='a', header=False, index=False)
+                new_df.to_csv('data.csv', mode='a', header=False, index=False)
                 
             return "Credentials Added Successfully."
         except Exception as e:
@@ -312,11 +306,11 @@ class PasswordManager:
         return all(ord(c) <= 126 or c in 'ąćęłńóśźżĄĆĘŁŃÓŚŹŻ' for c in text)
 
     def show_all_urls(self, master_pass):
-        if not os.path.isfile('data\data.csv'):
+        if not os.path.isfile('data.csv'):
             return []
 
         try:
-            df = pd.read_csv('data\data.csv')
+            df = pd.read_csv('data.csv')
             decrypted_urls = []
             
             for _, row in df.iterrows():
@@ -336,11 +330,11 @@ class PasswordManager:
         if url is None or len(url.strip()) < 2:
             return ["Please enter at least 2 characters to search."]
         
-        if not os.path.isfile('data\data.csv'):
+        if not os.path.isfile('data.csv'):
             return ["No credentials stored yet."]
 
         try:
-            df = pd.read_csv('data\data.csv')
+            df = pd.read_csv('data.csv')
             results = []
             
             for index, row in df.iterrows():
@@ -369,11 +363,11 @@ class PasswordManager:
             return [f"Search error: {str(e)}"]
 
     def edit(self, index, new_url, new_username, new_password, master_pass):
-        if not os.path.isfile('data\data.csv'):
+        if not os.path.isfile('data.csv'):
             return "Error: No credentials file found"
 
         try:
-            df = pd.read_csv('data\data.csv')
+            df = pd.read_csv('data.csv')
             
             if not (0 <= index < len(df)):
                 return "Invalid index. No such entry exists."
@@ -415,20 +409,20 @@ class PasswordManager:
             df.to_csv(temp_file, index=False)
             
             # Zamiana plików
-            os.replace(temp_file, 'data\data.csv')
+            os.replace(temp_file, 'data.csv')
             
             return "Credentials Edited Successfully."
         except Exception as e:
             return f"Error editing credentials: {str(e)}"
 
     def delete(self, index):
-        df = pd.read_csv("data\data.csv")
+        df = pd.read_csv("data.csv")
 
         if not df.index.isin([index]).any():
             return "Invalid index. No such entry exists."
         
         df.drop(index, inplace=True)
-        df.to_csv('data\data.csv', index=False)
+        df.to_csv('data.csv', index=False)
         return "Credentials Deleted Successfully."
 
 class ModernApp(tk.Tk):
@@ -675,7 +669,7 @@ Technology Stack:
     
     def check_config_and_toggle_options_on_save(self):
         # Ukrywa lub pokazuje opcje zmiany iteracji w zależności od istnienia pliku
-        if os.path.isfile('data\config.json'):
+        if os.path.isfile('config.json'):
             # Ukryj opcje
             self.iterations_label.pack_forget()
             self.iterations_scale.pack_forget()
@@ -692,7 +686,7 @@ Technology Stack:
 
     def check_config_and_toggle_options(self):
         # Ukrywa lub pokazuje opcje zmiany iteracji w zależności od istnienia pliku
-        if os.path.isfile('data\config.json'):
+        if os.path.isfile('config.json'):
             # Ukryj opcje
             self.iterations_label.pack_forget()
             self.iterations_scale.pack_forget()
@@ -701,7 +695,7 @@ Technology Stack:
             self.decrease_btn.pack_forget()
             self.increase_btn.pack_forget()
             # Zmniejsz wysokość okna o 150, nie schodząc poniżej 200
-            self.window_height = max(200, self.window_height - 140)
+            self.window_height = max(200, self.window_height - 145)
             self.geometry(f"550x{self.window_height}")
         else:
             # Pokaż opcje
@@ -714,13 +708,16 @@ Technology Stack:
         try:
             new_value = int(self.iterations_value.get())
             if 10000 <= new_value <= 200000:
-                result = self.manager.update_iterations(new_value, self.master_pass)  # Dodaj master_pass
-                messagebox.showinfo("Saved", result)
-                self.check_config_and_toggle_options()
+                self.manager.update_iterations(new_value)
+                messagebox.showinfo("Zapisano", f"Ustawienia iteracji zapisane: {new_value}")
+                # Zmniejsz wysokość okna o 150, nie schodząc poniżej 200
+                self.window_height = max(200, self.window_height - 150)
+                self.geometry(f"550x{self.window_height}")
+                self.check_config_and_toggle_options_on_save()
             else:
-                messagebox.showerror("Error", "Value must be between 10,000 and 200,000")
+                messagebox.showerror("Błędna wartość", "Wartość musi być w zakresie od 10 000 do 200 000.")
         except ValueError:
-            messagebox.showerror("Error", "Please enter a valid number")
+            messagebox.showerror("Błędna wartość", "Proszę wpisać poprawną liczbę.")
 
     
     def create_widgets(self):
@@ -1028,7 +1025,7 @@ Technology Stack:
             
         result = self.manager.add(url, username, password, self.master_pass)
         
-        # Jeśli błąd dotyczy braku data\config.json, pokaż przycisk ustawień
+        # Jeśli błąd dotyczy braku config.json, pokaż przycisk ustawień
         if "set the iteration count first" in result:
             self.results_text.configure(state='normal')
             self.results_text.delete('1.0', tk.END)
