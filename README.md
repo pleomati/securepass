@@ -1,6 +1,6 @@
 # SecurePass Manager
 
-![Application Screenshot](spass1.png) <!-- Add a screenshot if available -->
+![Application Screenshot](securepass.png) <!-- Add a screenshot if available -->
 
 Modern password manager with encryption, saving data locally in encrypted form.
 
