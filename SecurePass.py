@@ -701,7 +701,7 @@ Technology Stack:
             self.decrease_btn.pack_forget()
             self.increase_btn.pack_forget()
             # Zmniejsz wysokość okna o 150, nie schodząc poniżej 200
-            self.window_height = max(200, self.window_height - 145)
+            self.window_height = max(200, self.window_height - 140)
             self.geometry(f"550x{self.window_height}")
         else:
             # Pokaż opcje
