@@ -31,7 +31,7 @@ Modern password manager with encryption, saving data locally in encrypted form.
 - Run program:
 
    ```bash
-   python securepass.py
+   python SecurePass.py
 
 Compiling to an executable file
 To compile the program into a stand-alone .exe file (Windows):
