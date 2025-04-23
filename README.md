@@ -21,7 +21,7 @@ Modern password manager with encryption, saving data locally in encrypted form.
 - clone the repository or download the files:
    ```bash
    git clone https://github.com/pleomati/securepass.git
-   cd SecurePass
+   cd securepass
 
 - Install required dependencies:
 
@@ -31,7 +31,7 @@ Modern password manager with encryption, saving data locally in encrypted form.
 - Run program:
 
    ```bash
-   python SecurePass.py
+   python securepass.py
 
 Compiling to an executable file
 To compile the program into a stand-alone .exe file (Windows):
